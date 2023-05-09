@@ -1,0 +1,7 @@
+/*executes a left join with the film table to find titles missing from inventory. These movie titles are listed in the film table but are missing from the inventory*/
+SELECT A.title
+FROM film A
+LEFT JOIN inventory B ON A.film_id = B.film_id
+WHERE B.film_id IS NULL
+GROUP BY A.film_id, B.film_id
+ORDER BY (A.film_id)
