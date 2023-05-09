@@ -59,7 +59,7 @@ GROUP BY D.country, C.city, A.customer_id, B.district
 ORDER BY 4 DESC,
  5 DESC)
 
-/*this query combined elements from cte 2 and cte 4. It also joins performs a right join on cte 3 with cte 2 to limit results to the top ten countries by revenue*/
+/*this query combined elements from cte 2 and cte 4. It also performs a right join on cte 3 with cte 2 to limit results to the top ten countries by revenue*/
 SELECT DISTINCT (cte_2.country),
  cte_2.country_revenue,
  cte_4.country_customer_count,
