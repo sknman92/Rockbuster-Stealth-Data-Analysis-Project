@@ -1,0 +1,77 @@
+/*cte 1 lists country, revenue partitioned by country, city id, city name, city district, and revenue partitionted by city*/
+WITH cte_1 (country, country_revenue, city_id, city, district, city_revenue) AS
+(SELECT DISTINCT (D.country),
+ SUM (E.amount) OVER (PARTITION BY D.country) AS country_revenue,
+ C.city_id,
+ C.city,
+ B.district,
+ SUM (E.amount) OVER (PARTITION BY B.address_id) AS city_revenue
+FROM customer A
+INNER JOIN payment E ON A.customer_id = E.customer_id
+INNER JOIN address B ON A.address_id = B.address_id
+INNER JOIN city C ON B.city_id = C.city_id
+INNER JOIN country D ON D.country_id = C.country_id
+ORDER BY 3 DESC)
+
+,
+
+/*cte 2 lists several variables from cte 1 and adds row partition ordered by city revenue. this row will serve as a rank of cities by revenue per country*/
+cte_2 (country, country_revenue, city, district, city_revenue, city_rank_by_revenue) AS
+(SELECT DISTINCT (cte_1.country),
+ cte_1.country_revenue,
+ cte_1.city,
+ cte_1.district,
+ cte_1.city_revenue,
+ ROW_NUMBER () OVER (PARTITION BY cte_1.country ORDER BY (city_revenue) DESC) AS city_rank
+FROM cte_1)
+
+,
+
+/*cte 3 lists the top ten countries by revenue*/
+cte_3 (country, revenue, customer_count) AS
+(SELECT D.country,
+ SUM (E.amount) AS "revenue",
+ COUNT (DISTINCT (A.customer_id)) AS "customer_count"
+FROM customer A
+ INNER JOIN payment E ON A.customer_id = E.customer_id
+ INNER JOIN address B ON A.address_id = B.address_id
+ INNER JOIN city C on B.city_id = C.city_id
+ INNER JOIN country D ON C.country_id = D.country_id
+GROUP BY D.country
+ORDER BY (revenue) DESC
+LIMIT 10)
+
+,
+
+/*cte 4 primarily partitions customer count by country and city*/
+cte_4 (country, city, district, country_customer_count, city_customer_count) AS
+(SELECT DISTINCT (D.country),
+ C.city,
+ B.district,
+ COUNT (A.customer_id) OVER (PARTITION BY D.country) AS country_customer_count,
+ COUNT (A.customer_id) OVER (PARTITION BY C.city) AS city_customer_count
+FROM customer A
+INNER JOIN payment E ON A.customer_id = E.customer_id
+INNER JOIN address B ON A.address_id = B.address_id
+INNER JOIN city C ON B.city_id = C.city_id
+INNER JOIN country D ON D.country_id = C.country_id
+GROUP BY D.country, C.city, A.customer_id, B.district
+ORDER BY 4 DESC,
+ 5 DESC)
+
+/*this query combined elements from cte 2 and cte 4. It also joins performs a right join on cte 3 with cte 2 to limit results to the top ten countries by revenue*/
+SELECT DISTINCT (cte_2.country),
+ cte_2.country_revenue,
+ cte_4.country_customer_count,
+ cte_2.city_rank_by_revenue,
+ cte_4.district,
+ cte_2.city,
+ cte_2.city_revenue,
+ cte_4.city_customer_count
+FROM cte_2
+RIGHT JOIN cte_3 ON cte_2.country = cte_3.country
+RIGHT JOIN cte_4 ON cte_2.city = cte_4.city
+WHERE cte_2.city_rank_by_revenue IN (1,2,3)
+ORDER BY (cte_2.country_revenue) DESC, (cte_2.city_rank_by_revenue) ASC 
+
+	
