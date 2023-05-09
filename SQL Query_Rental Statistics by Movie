@@ -1,0 +1,28 @@
+/*selects descriptive rental statistics per film*/
+
+SELECT title, 
+
+MIN(rental_duration) AS min_rental_duration,
+MAX(rental_duration) AS max_rental_duration,
+ROUND (AVG(rental_duration),2) AS avg_rental_duration,
+COUNT(rental_duration) AS count_rental_duration,
+
+MIN(rental_rate) AS min_rent,
+MAX(rental_rate) AS max_rent,
+ROUND (AVG(rental_rate), 2) AS avg_rent,
+COUNT(rental_rate) AS count_rent_values,
+
+MIN(length) AS min_length,
+MAX(length) AS max_length,
+ROUND (AVG(length),2) AS avg_length,
+COUNT(length) AS count_length,
+
+MIN(replacement_cost) AS min_replacement_cost,
+MAX(replacement_cost) AS max_replacement_cost,
+ROUND (AVG(replacement_cost),2) AS avg_replacement_cost,
+COUNT(replacement_cost) AS count_replacement_cost,
+
+COUNT(*) AS count_rows
+
+FROM film
+GROUP BY title
