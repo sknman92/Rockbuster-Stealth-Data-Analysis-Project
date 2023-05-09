@@ -7,4 +7,4 @@ This project was completed as part of CareerFoundry's Data Analytics course betw
 This portfolio includes several SQL queries that were used to analyze the Rockbuster data, along with an entity relationship diagram (ERD) and a data dictionary. The final PowerPoint presentation and a link to the Tableau visualization are also included.
 
 ## Dataset
-The Rockbuster dataset contains information on Rockbuster's film inventory, customers, payments, and other details. Please refer to the data dictionary and ERD for more details.
+A fictional PostgreSQL data set was used for this project. The data set contains information on Rockbuster's film inventory, customers, payments, and other details. The full data set can be found here : http://www.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip 
