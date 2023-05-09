@@ -1,0 +1,80 @@
+/*combines mutliple ctes to derive customer rank by revenue per country*/
+WITH A (customer_id, first_payment, last_payment) AS
+(SELECT customer_id, 
+	MIN (payment_date) AS first_payment,
+	MAX (payment_date) AS last_payment
+FROM payment
+GROUP BY (customer_id))
+
+,
+
+B (customer_id, DTG) AS
+(SELECT A.customer_id, 
+	(A.last_payment - A.first_payment) AS DTG
+FROM A)
+
+, 
+
+C (country, city, customer_id, first_name, last_name, customer_rental_count, customer_revenue) AS
+(SELECT E.country,
+	D.city,
+	A.customer_id,
+	B.first_name,
+	B.last_name,
+	COUNT (A.payment_id) AS customer_rental_count,
+	SUM (A.amount) AS customer_revenue
+FROM payment A
+INNER JOIN customer B ON A.customer_id = B.customer_id
+INNER JOIN address C ON B.address_id = C.address_id
+INNER JOIN city D ON C.city_id = D.city_id
+INNER JOIN country E ON D.country_id = E.country_id
+GROUP BY A.customer_id, D.city, E.country_id, B.first_name, B.last_name
+ORDER BY (customer_revenue) DESC)
+
+,
+
+D (country, total_amount_paid, customer_count) AS
+(SELECT D.country,
+	SUM (E.amount) AS "total_amount_paid",
+	COUNT (DISTINCT (A.customer_id)) AS "customer_count"
+FROM customer A
+	INNER JOIN payment E ON A.customer_id = E.customer_id
+	INNER JOIN address B ON A.address_id = B.address_id
+	INNER JOIN city C on B.city_id = C.city_id
+	INNER JOIN country D ON C.country_id = D.country_id
+GROUP BY D.country
+ORDER BY ("total_amount_paid") DESC)
+
+,
+
+E (country, city, customer_id, first_name, last_name, customer_rental_count, customer_revenue, days_active) AS
+(SELECT C.country, C.city, C.customer_id, C.first_name, C.last_name, C.customer_rental_count, C.customer_revenue,
+	EXTRACT (days FROM B.DTG) AS days_active
+FROM C
+INNER JOIN B ON C.customer_id = B.customer_id
+INNER JOIN D ON C.country = D.country
+ORDER BY (C.country) ASC)
+
+,
+
+F (country, city, customer_id, first_name, last_name, customer_rental_count, customer_revenue, days_active, customer_value) AS
+(SELECT E.country, E.city, E.customer_id, E.first_name, E.last_name, E.customer_rental_count, E.customer_revenue, E.days_active,
+	(E.customer_rental_count * E.customer_revenue * E.days_active) AS customer_value
+FROM E
+ORDER BY (country) ASC,
+(customer_value) DESC)
+
+,
+
+G (country, customer_id, customer_value, customer_rank) AS
+(SELECT F.country,
+ 	F.customer_id,
+	F.customer_value,
+	ROW_NUMBER () OVER (PARTITION BY F.country ORDER BY (customer_value) DESC) AS customer_rank
+FROM F)
+
+SELECT F.country, F.city, F.customer_id, F.first_name, F.last_name, F.customer_rental_count, F.customer_revenue, F.days_active, F.customer_value,
+	G.customer_rank AS "customer_rank_by_country"
+FROM F
+INNER JOIN G ON F.customer_id = G.customer_id
+ORDER BY (customer_value) DESC
